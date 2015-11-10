@@ -637,7 +637,7 @@ class SyncHandler(BaseHandler):
         logging.debug("Recents %r", batch)
 
         state_events_at_leave = yield self.store.get_state_for_event(
-            leave_event
+            leave_event.event_id
         )
 
         state_at_previous_sync = yield self.get_state_at(
