@@ -420,16 +420,17 @@ class FilteringTestCase(unittest.TestCase):
         event = MockEvent(
             sender="@foo:bar",
             type="m.room.topic",
-            room_id="!foo:bar"
+            room_id="!foo:bar",
+            state_key="",
         )
-        events = [event]
+        events = {(event.type, event.state_key): event}
 
         user_filter = yield self.filtering.get_user_filter(
             user_localpart=user_localpart,
             filter_id=filter_id,
         )
 
-        results = user_filter.filter_room_state(events=events)
+        results = user_filter.filter_room_state(events)
         self.assertEquals(events, results)
 
     @defer.inlineCallbacks
@@ -449,9 +450,11 @@ class FilteringTestCase(unittest.TestCase):
         event = MockEvent(
             sender="@foo:bar",
             type="org.matrix.custom.event",
-            room_id="!foo:bar"
+            room_id="!foo:bar",
+            state_key="",
+
         )
-        events = [event]
+        events = {(event.type, event.state_key): event}
 
         user_filter = yield self.filtering.get_user_filter(
             user_localpart=user_localpart,
@@ -459,7 +462,7 @@ class FilteringTestCase(unittest.TestCase):
         )
 
         results = user_filter.filter_room_state(events)
-        self.assertEquals([], results)
+        self.assertEquals({}, results)
 
     @defer.inlineCallbacks
     def test_add_filter(self):
