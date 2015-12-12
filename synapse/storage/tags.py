@@ -66,6 +66,41 @@ class TagsStore(SQLBaseStore):
 
         return deferred
 
+    def get_all_updated_tags(self, last_id, current_id, limit):
+        """Get all the client tags that have changed on the server
+        Args:
+            last_id(int): The position to fetch from.
+            current_id(int): The position to fetch up to.
+        Returns:
+            A deferred list of tuples of stream_id int, user_id string,
+            room_id string, tag string and content string.
+        """
+        def get_all_updated_tags_txn(txn):
+            sql = (
+                "SELECT stream_id, user_id, room_id"
+                " FROM room_tags_revisions as r"
+                " WHERE ? < stream_id AND stream_id <= ?"
+                " ORDER BY stream_id ASC LIMIT ?"
+            )
+            txn.execute(sql, (last_id, current_id, limit))
+
+            sql = (
+                "SELECT tag, content"
+                " FROM room_tags"
+                " WHERE user_id=? AND room_id=?"
+            )
+            results = []
+            for stream_id, user_id, room_id in txn.fetchall():
+                txn.execute(sql, (user_id, room_id))
+                for tag, content in txn.fetchall():
+                    results.append((stream_id, user_id, room_id, tag, content))
+
+            return results
+
+        return self.runInteraction(
+            "get_all_updated_tags_txn", get_all_updated_tags_txn
+        )
+
     @defer.inlineCallbacks
     def get_updated_tags(self, user_id, stream_id):
         """Get all the tags for the rooms where the tags have changed since the
