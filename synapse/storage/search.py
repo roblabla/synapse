@@ -85,6 +85,11 @@ class SearchStore(BackgroundUpdateStore):
                     # skip over it.
                     continue
 
+                if not isinstance(value, basestring):
+                    # If the event body, name or topic isn't a string
+                    # then skip over it
+                    continue
+
                 event_search_rows.append((event_id, room_id, key, value))
 
             if isinstance(self.database_engine, PostgresEngine):
@@ -189,7 +194,7 @@ class SearchStore(BackgroundUpdateStore):
 
             count_sql = (
                 "SELECT room_id, count(*) as count FROM event_search"
-                " WHERE value MATCH ? AND "
+                " WHERE value MATCH ?"
             )
             count_args = [search_term] + count_args
         else:
@@ -281,8 +286,10 @@ class SearchStore(BackgroundUpdateStore):
             "(%s)" % (" OR ".join(local_clauses),)
         )
 
-        count_args = args
-        count_clauses = clauses
+        # take copies of the current args and clauses lists, before adding
+        # pagination clauses to main query.
+        count_args = list(args)
+        count_clauses = list(clauses)
 
         if pagination_token:
             try:

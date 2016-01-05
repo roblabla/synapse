@@ -85,7 +85,9 @@ class SyncRestServlet(RestServlet):
 
     @defer.inlineCallbacks
     def on_GET(self, request):
-        user, token_id, _ = yield self.auth.get_user_by_req(request)
+        user, token_id, is_guest = yield self.auth.get_user_by_req(
+            request, allow_guest=True
+        )
 
         timeout = parse_integer(request, "timeout", default=0)
         since = parse_string(request, "since")
@@ -104,7 +106,6 @@ class SyncRestServlet(RestServlet):
         )
 
         if filter_id and filter_id.startswith('{'):
-            logging.error("MJH %r", filter_id)
             try:
                 filter_object = json.loads(filter_id)
             except:
@@ -119,8 +120,14 @@ class SyncRestServlet(RestServlet):
             except:
                 filter = FilterCollection({})
 
+        if is_guest and filter.list_rooms() is None:
+            raise SynapseError(
+                400, "Guest users must provide a list of rooms in the filter"
+            )
+
         sync_config = SyncConfig(
             user=user,
+            is_guest=is_guest,
             filter=filter,
         )
 
@@ -351,20 +358,36 @@ class SyncRestServlet(RestServlet):
                 continue
 
             prev_event_id = timeline_event.unsigned.get("replaces_state", None)
-            logger.debug("Replacing %s with %s in state dict",
-                         timeline_event.event_id, prev_event_id)
 
-            if prev_event_id is None:
+            prev_content = timeline_event.unsigned.get('prev_content')
+            prev_sender = timeline_event.unsigned.get('prev_sender')
+            # Empircally it seems possible for the event to have a
+            # "replaces_state" key but not a prev_content or prev_sender
+            # markjh conjectures that it could be due to the server not
+            # having a copy of that event.
+            # If this is the case the we ignore the previous event. This will
+            # cause the displayname calculations on the client to be incorrect
+            if prev_event_id is None or not prev_content or not prev_sender:
+                logger.debug(
+                    "Removing %r from the state dict, as it is missing"
+                    " prev_content (prev_event_id=%r)",
+                    timeline_event.event_id, prev_event_id
+                )
                 del result[event_key]
             else:
+                logger.debug(
+                    "Replacing %r with %r in state dict",
+                    timeline_event.event_id, prev_event_id
+                )
                 result[event_key] = FrozenEvent({
                     "type": timeline_event.type,
                     "state_key": timeline_event.state_key,
-                    "content": timeline_event.unsigned['prev_content'],
-                    "sender": timeline_event.unsigned['prev_sender'],
+                    "content": prev_content,
+                    "sender": prev_sender,
                     "event_id": prev_event_id,
                     "room_id": timeline_event.room_id,
                 })
+
             logger.debug("New value: %r", result.get(event_key))
 
         return result
