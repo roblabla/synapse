@@ -329,6 +329,7 @@ class RoomCreationTest(unittest.TestCase):
                 "snapshot_room",
                 "persist_event",
                 "get_joined_hosts_for_room",
+                "get_app_service_by_user_id",
             ]),
             http_client=NonCallableMock(spec_set=[]),
             notifier=NonCallableMock(spec_set=["on_new_room_event"]),

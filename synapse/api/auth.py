@@ -514,9 +514,7 @@ class Auth(object):
 
             # Check for application service tokens with a user_id override
             try:
-                app_service = yield self.store.get_app_service_by_token(
-                    access_token
-                )
+                app_service = self.store.get_app_service_by_token(access_token)
                 if not app_service:
                     raise KeyError
 
@@ -705,7 +703,7 @@ class Auth(object):
     def get_appservice_by_req(self, request):
         try:
             token = request.args["access_token"][0]
-            service = yield self.store.get_app_service_by_token(token)
+            service = self.store.get_app_service_by_token(token)
             if not service:
                 raise AuthError(
                     self.TOKEN_NOT_FOUND_HTTP_STATUS,

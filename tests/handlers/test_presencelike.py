@@ -65,6 +65,7 @@ class PresenceProfilelikeDataTestCase(unittest.TestCase):
                 "is_presence_visible",
                 "set_profile_displayname",
                 "get_rooms_for_user",
+                "get_app_service_by_user_id",
             ]),
             handlers=None,
             resource_for_federation=Mock(),

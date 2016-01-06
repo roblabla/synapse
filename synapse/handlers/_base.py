@@ -116,6 +116,10 @@ class BaseHandler(object):
         defer.returnValue(events_to_return)
 
     def ratelimit(self, user_id):
+        application_service = self.store.get_app_service_by_user_id(user_id)
+        if application_service and not application_service.ratelimit:
+            return
+
         time_now = self.clock.time()
         allowed, time_allowed = self.ratelimiter.send_message(
             user_id, time_now,

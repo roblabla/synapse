@@ -328,7 +328,7 @@ class PresenceEventStreamTestCase(unittest.TestCase):
         self.mock_datastore = hs.get_datastore()
         self.mock_datastore.get_app_service_by_token = Mock(return_value=None)
         self.mock_datastore.get_app_service_by_user_id = Mock(
-            return_value=defer.succeed(None)
+            return_value=None
         )
         self.mock_datastore.get_rooms_for_user = (
             lambda u: [
